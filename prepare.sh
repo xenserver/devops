@@ -16,53 +16,54 @@ lowercase(){
 
 OS=`lowercase \`uname\``
 KERNEL=`uname -r`
-MACH=`uname -m`
+ARCH=`uname -m`
 
 if [ "${OS}" == "windowsnt" ]; then
-    OS_NAME=windows
+    OS=windows
 elif [ "${OS}" == "darwin" ]; then
-    OS_NAME=mac
+    OS=mac
     REV=`sw_vers | grep 'ProductVersion:' | grep -o '[0-9]*\.[0-9]*\.[0-9]*'`
 else
-    OS_NAME=`uname`
-    if [ "${OS}" = "SunOS" ] ; then
-        OS_NAME=Solaris
+    if [ "${OS}" = "sunos" ] ; then
+        DIST=solaris
         ARCH=`uname -p`
         OSSTR="${OS} ${REV}(${ARCH} `uname -v`)"
-    elif [ "${OS}" = "AIX" ] ; then
+    elif [ "${OS}" = "aix" ] ; then
         OSSTR="${OS} `oslevel` (`oslevel -r`)"
-    elif [ "${OS}" = "Linux" ] ; then
+    elif [ "${OS}" = "linux" ] ; then
         if [ -f /etc/redhat-release ] ; then
-            DistroBasedOn='RedHat'
+            #DIST='redhat'
             DIST=`cat /etc/redhat-release |sed s/\ release.*//`
             PSUEDONAME=`cat /etc/redhat-release | sed s/.*\(// | sed s/\)//`
             REV=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//`
         elif [ -f /etc/SuSE-release ] ; then
-            DistroBasedOn='SuSe'
+            DIST='suse'
             PSUEDONAME=`cat /etc/SuSE-release | tr "\n" ' '| sed s/VERSION.*//`
             REV=`cat /etc/SuSE-release | tr "\n" ' ' | sed s/.*=\ //`
         elif [ -f /etc/mandrake-release ] ; then
-            DistroBasedOn='Mandrake'
+            DIST='mandrake'
             PSUEDONAME=`cat /etc/mandrake-release | sed s/.*\(// | sed s/\)//`
             REV=`cat /etc/mandrake-release | sed s/.*release\ // | sed s/\ .*//`
-        elif [ -f /etc/debian_version ] ; then
-            DistroBasedOn='Debian'
-            DIST=`cat /etc/lsb-release | grep '^DISTRIB_ID' | awk -F=  '{ print $2 }'`
-            PSEUDONAME=`cat /etc/lsb-release | grep '^DISTRIB_CODENAME' | awk -F=  '{ print $2 }'`
-            REV=`cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F=  '{ print $2 }'`
-        fi
-        if [ -f /etc/UnitedLinux-release ] ; then
+        elif [ -f /etc/UnitedLinux-release ] ; then
             DIST="${DIST}[`cat /etc/UnitedLinux-release | tr "\n" ' ' | sed s/VERSION.*//`]"
+        else
+            which lsb_release >/dev/null
+            if [[ $? -eq 0 ]]; then
+                DIST=`lsb_release -i | cut -f2`
+                DIST=`lowercase $DIST`
+                PSEUDONAME=`lsb_release --codename | cut -f2`
+                REV=`lsb_release --release | cut -f2`
+            fi
         fi
+        
         OS_NAME=`lowercase $OS`
         DistroBasedOn=`lowercase $DistroBasedOn`
-        readonly OS_NAME
+        readonly OS
         readonly DIST
-        readonly DistroBasedOn
         readonly PSEUDONAME
         readonly REV
         readonly KERNEL
-        readonly MACH
+        readonly ARCH
     fi
 
 fi
@@ -70,21 +71,34 @@ fi
 # Platforms: osx, linux, windows
 # OS: darwin, windowsnt, ubuntu, debian, redhat, mandrake, suse
 # REV: 10.9, 12.04, ...
-echo "OS_NAME: ${OS_NAME}"
-echo "DistoBasedOn: ${DistroBaseOn}"
-echo "PSEUDONAME: ${PSEUDONAME}"
-echo "OS: ${OS}"
-echo "DIST: ${DIST}"
-echo "REV: ${REV}"
-
-exit
+CN="$(tput setaf 9)"
+CB="$(tput setaf 2)"
+#COL_GREEN="$(tput setaf 2)"
+echo "os=${CB}${OS}${CN} dist=${CB}${DIST}${CN} pseudoname=${CB}${PSEUDONAME}${CN} rev=${CB}${REV}${CN} arch=${CB}${ARCH}${CN} kernel=${CB}${KERNEL}${CN}"
+#echo "os=${OS} dist=${DIST} pseudoname=${PSEUDONAME} rev=${REV} arch=${ARCH} kernel=${KERNEL}"
 set -ex
 
+#exit
+
 cd /tmp
- 
-[ -f /etc/dpkg/origins/ubuntu ] && wget http://repo.zabbix.com/zabbix/2.2/ubuntu/pool/main/z/zabbix-release/zabbix-release_2.2-1+precise_all.deb && dpkg -i zabbix-release_2.2-1+precise_all.deb
-[ -f /etc/dpkg/origins/debian ] && wget http://repo.zabbix.com/zabbix/2.2/debian/pool/main/z/zabbix-release/zabbix-release_2.2-1+wheezy_all.deb && dpkg -i zabbix-release_2.2-1+wheezy_all.deb
- 
-apt-get -y update
-apt-get -y install zabbix-agent
-apt-get -y upgrade zabbix-agent
+if [ "$DIST" = "ubuntu" ]; then
+    apt-get -q -y install wget
+    wget http://repo.zabbix.com/zabbix/2.2/ubuntu/pool/main/z/zabbix-release/zabbix-release_2.2-1+precise_all.deb
+    dpkg -i zabbix-release_2.2-1+precise_all.deb
+    mkdir -p /etc/zabbix
+    wget -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
+    apt-get -q -y update
+    apt-get -y install zabbix-agent
+    apt-get -y upgrade zabbix-agent
+elif [ "$DIST" = "debian" ]; then
+    apt-get -q -y install wget
+    wget http://repo.zabbix.com/zabbix/2.2/debian/pool/main/z/zabbix-release/zabbix-release_2.2-1+wheezy_all.deb
+    dpkg -i zabbix-release_2.2-1+wheezy_all.deb
+    mkdir -p /etc/zabbix
+    wget -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
+    apt-get -q -y update
+    apt-get -y install zabbix-agent
+    apt-get -y upgrade zabbix-agent
+else
+    echo "WARN: Unable to install zabbix for this OS"
+fi 
