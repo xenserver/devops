@@ -82,6 +82,7 @@ set -ex
 
 cd /tmp
 if [ "$DIST" = "ubuntu" ]; then
+    export DEBIAN_FRONTEND=noninteractive
     apt-get -q -y install wget
     wget http://repo.zabbix.com/zabbix/2.2/ubuntu/pool/main/z/zabbix-release/zabbix-release_2.2-1+precise_all.deb
     dpkg -i zabbix-release_2.2-1+precise_all.deb
@@ -91,6 +92,7 @@ if [ "$DIST" = "ubuntu" ]; then
     apt-get -y install zabbix-agent
     apt-get -y upgrade zabbix-agent
 elif [ "$DIST" = "debian" ]; then
+    export DEBIAN_FRONTEND=noninteractive
     apt-get -q -y install wget
     wget http://repo.zabbix.com/zabbix/2.2/debian/pool/main/z/zabbix-release/zabbix-release_2.2-1+wheezy_all.deb
     dpkg -i zabbix-release_2.2-1+wheezy_all.deb
