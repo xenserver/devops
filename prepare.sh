@@ -86,7 +86,7 @@ if [ "$DIST" = "ubuntu" ]; then
     wget http://repo.zabbix.com/zabbix/2.2/ubuntu/pool/main/z/zabbix-release/zabbix-release_2.2-1+precise_all.deb
     dpkg -i zabbix-release_2.2-1+precise_all.deb
     mkdir -p /etc/zabbix
-    wget -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
+    wget --no-check-certificate -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
     apt-get -q -y update
     apt-get -y install zabbix-agent
     apt-get -y upgrade zabbix-agent
@@ -95,7 +95,7 @@ elif [ "$DIST" = "debian" ]; then
     wget http://repo.zabbix.com/zabbix/2.2/debian/pool/main/z/zabbix-release/zabbix-release_2.2-1+wheezy_all.deb
     dpkg -i zabbix-release_2.2-1+wheezy_all.deb
     mkdir -p /etc/zabbix
-    wget -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
+    wget --no-check-certificate -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
     apt-get -q -y update
     apt-get -y install zabbix-agent
     apt-get -y upgrade zabbix-agent
