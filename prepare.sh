@@ -95,7 +95,16 @@ if [ "$DIST" = "ubuntu" ] || [ "$DIST" = "debian" ] ; then
         dpkg -i zabbix-release_2.2-1+wheezy_all.deb
     fi
     git clone --depth=1 https://github.com/xenserver/devops.git /tmp/devops || git --git-dir=/tmp/devops/.git --work-tree=/tmp/devops pull --depth=1
-    rsync -n -ahv /tmp/devops/etc/* /etc/
+    rsync -ahv /tmp/devops/etc/* /etc/
+
+    # scooter software
+    gpg --keyserver subkeys.pgp.net --recv-key E2A11821
+    # nginx, saltstack, jenkins, dell, webupdt8team (oracle)
+    for KEY in 9BDB3D89CE49EC21 B09E40B0F2AE6AB9 1285491434D8786F C2518248EEA14886 ABF5BD827BD9BF62 9B7D32F2D50582E6 
+    do
+       gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv $KEY && gpg --export --armor $KEY | sudo apt-key add - || echo "error"
+    done
+
     mkdir -p /etc/zabbix
     wget --no-check-certificate -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
     apt-get -qq -y update
