@@ -86,7 +86,7 @@ set -ex
 cd /tmp
 if [ "$DIST" = "ubuntu" ] || [ "$DIST" = "debian" ] ; then
     export DEBIAN_FRONTEND=noninteractive
-    apt-get -q -y install wget git
+    apt-get -q -y install wget git mc goaccess etckeeper
     if [ "$DIST" = "ubuntu" ] ; then
         wget http://repo.zabbix.com/zabbix/2.2/ubuntu/pool/main/z/zabbix-release/zabbix-release_2.2-1+precise_all.deb
         dpkg -i zabbix-release_2.2-1+precise_all.deb
