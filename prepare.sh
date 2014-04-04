@@ -8,6 +8,9 @@
 # * update and upgrade all packages on the machine
 #
 # As a rule, this script should be safe to run as many times we want.
+#
+# One line deployment:
+# wget --no-check-certificate https://raw.githubusercontent.com/xenserver/devops/master/prepare.sh -v -O prepare.sh && chmod +x prepare.sh && ./prepare.sh; rm -rf prepare.sh
 
 #-- code to detect OS
 lowercase(){
