@@ -89,8 +89,7 @@ if [ "$DIST" = "ubuntu" ]; then
     mkdir -p /etc/zabbix
     wget --no-check-certificate -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
     apt-get -q -y update
-    apt-get -y install zabbix-agent
-    apt-get -y upgrade zabbix-agent
+    apt-get -y install zabbix-agent tmux git mercurial htop atop iotop
 elif [ "$DIST" = "debian" ]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get -q -y install wget
@@ -99,8 +98,7 @@ elif [ "$DIST" = "debian" ]; then
     mkdir -p /etc/zabbix
     wget --no-check-certificate -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
     apt-get -q -y update
-    apt-get -y install zabbix-agent
-    apt-get -y upgrade zabbix-agent
+    apt-get -y install zabbix-agent  tmux git mercurial htop atop iotop
 else
     echo "WARN: Unable to install zabbix for this OS"
 fi 
