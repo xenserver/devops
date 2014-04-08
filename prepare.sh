@@ -100,7 +100,7 @@ if [ "$DIST" = "ubuntu" ] || [ "$DIST" = "debian" ] ; then
     # scooter software
     gpg --keyserver subkeys.pgp.net --recv-key E2A11821
     # nginx, saltstack, jenkins, dell, webupdt8team (oracle)
-    for KEY in 9BDB3D89CE49EC21 B09E40B0F2AE6AB9 1285491434D8786F C2518248EEA14886 ABF5BD827BD9BF62 9B7D32F2D50582E6 
+    for KEY in 9BDB3D89CE49EC21 B09E40B0F2AE6AB9 1285491434D8786F C2518248EEA14886 ABF5BD827BD9BF62 9B7D32F2D50582E6 331D6DDE7F8840CE 
     do
        gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv $KEY && gpg --export --armor $KEY | sudo apt-key add - || echo "error"
     done
