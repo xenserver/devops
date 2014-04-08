@@ -97,8 +97,6 @@ if [ "$DIST" = "ubuntu" ] || [ "$DIST" = "debian" ] ; then
     git clone --depth=1 https://github.com/xenserver/devops.git /tmp/devops || git --git-dir=/tmp/devops/.git --work-tree=/tmp/devops pull --depth=1
     rsync -ahv /tmp/devops/etc/* /etc/
 
-    # scooter software
-    gpg --keyserver subkeys.pgp.net --recv-key E2A11821
     # nginx, saltstack, jenkins, dell, webupdt8team (oracle)
     for KEY in 9BDB3D89CE49EC21 B09E40B0F2AE6AB9 1285491434D8786F C2518248EEA14886 ABF5BD827BD9BF62 9B7D32F2D50582E6 331D6DDE7F8840CE 
     do
