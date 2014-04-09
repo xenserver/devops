@@ -283,3 +283,5 @@ if __name__ == '__main__':
     end = time.time()
 
     print("-- done in %.0fs seconds --" % (end - start))
+    if vulnerables:
+        sys.exit(1)
