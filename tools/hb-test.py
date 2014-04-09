@@ -12,34 +12,29 @@ import struct
 import socket
 import time
 import select
-import re
 import logging
 from optparse import OptionParser
 import multiprocessing
-from multiprocessing import Process, Manager, Pool
-
-
-options = OptionParser(usage='%prog server [options]', description='Test for SSL heartbeat vulnerability (CVE-2014-0160)')
-options.add_option('-p', '--port', type='int', default=443, help='TCP port to test (default: 443)')
-options.add_option('-s', '--starttls', action='store_true', default=False, help='Check STARTTLS')
-options.add_option('-d', '--debug', action='store_true', default=False, help='Enable debug output')
+from multiprocessing import Manager, Pool
 
 DEBUG = 0
 TIMEOUT = 10 # max seconds before timing-out, by default timing-out = no error !
-#logging.basicConfig(level=logging.DEBUG)
+if 'DEBUG' in os.environ:
+    DEBUG = os.environ['DEBUG']
+    logging.basicConfig(level=logging.DEBUG)
 
 def check_port(address, port):
-	# Create a TCP socket
-	s = socket.socket()
+    # Create a TCP socket
+    s = socket.socket()
     s.settimeout(TIMEOUT)
-	logging.debug("Attempting to connect to %s on port %s" % (address, port))
-	try:
-		s.connect((address, port))
-		logging.debug("Connected to %s on port %s" % (address, port))
-		return True
-	except socket.error, e:
-		logging.debug("Connection to %s on port %s failed: %s" % (address, port, e))
-		return False
+    logging.debug("Attempting to connect to %s on port %s" % (address, port))
+    try:
+        s.connect((address, port))
+        logging.debug("Connected to %s on port %s" % (address, port))
+        return True
+    except socket.error, e:
+        logging.debug("Connection to %s on port %s failed: %s" % (address, port, e))
+        return False
 
 def h2bin(x):
     return x.replace(' ', '').replace('\n', '').decode('hex')
@@ -136,20 +131,10 @@ def hit_hb(s):
 
 def main(host, port=443, debug=False, starttls=False):
     """
-
     False : is not vulnerable
     True : is vulnerable
     2 : failed to validate
     3 : START TLS failed
-
-    """
-    """
-    """
-    """
-    opts, args = options.parse_args()
-    if len(args) < 1:
-        options.print_help()
-        return
     """
 
     if port in [22,25,143,587,110]:
