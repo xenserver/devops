@@ -24,6 +24,8 @@ options.add_option('-p', '--port', type='int', default=443, help='TCP port to te
 options.add_option('-s', '--starttls', action='store_true', default=False, help='Check STARTTLS')
 options.add_option('-d', '--debug', action='store_true', default=False, help='Enable debug output')
 
+DEBUG = 0
+#logging.basicConfig(level=logging.DEBUG)
 
 def check_port(address, port):
 	# Create a TCP socket
@@ -148,6 +150,12 @@ def main(host, port=443, debug=False, starttls=False):
         return
     """
 
+    if port in [22,25,143,587,110]:
+        starttls = True
+
+   #  587, 993, 465, 21, 22
+
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     logging.debug('Connecting... %s:%s' % (host, port))
     sys.stdout.flush()
@@ -194,6 +202,9 @@ def main(host, port=443, debug=False, starttls=False):
             # We do assume that Connection reset by peer is acceptable.
             return False
         logging.error("%s:%s %s" % (host, port, e))
+
+    logging.debug("Returning %s for %s:%s" % (ret, host, port))
+
     return ret
 
 manager = Manager()
@@ -201,11 +212,11 @@ vulnerables = manager.dict()
 
 
 def f(x):
-    host, port, vulnerables = x
+    host, port, zz = x
     if check_port(host, port):
         ret = main(host)
-        if ret is True :  # 2 means skipped due to internal error
-            vulnerables[(host,port)]=ret
+        #if ret is True :  # 2 means skipped due to internal error
+        vulnerables[(host,port)]=ret
 
 if __name__ == '__main__':
 
@@ -231,29 +242,24 @@ if __name__ == '__main__':
             except Exception, e:
                 logging.error("Failed to resolve: %s" % host)
 
-    ports = [ 443, 25, 587, 143, 993, 465, 21, 22]
+    #ports = [ 443, 25, 587, 143, 993, 465, 21, 22, 110]
+    ports = [ 443, 25, 22, 587, 143, 110]
+    #ports = [ 443 ]
 
     to_check = []
+
     threads = multiprocessing.cpu_count()*4
-    logging.warning("Running on %s threads and having to scan %s hosts" % (threads, len(hosts)))
+
+    if DEBUG:
+        threads = 1
+
+    logging.warning("Running on %s threads and having to scan %s hosts and %s ports" % (threads, len(hosts), len(ports)))
+
     pool = Pool(processes=threads)
     for host in hosts:
         for port in ports:
             service = "%s:%s" % (host, port)
             to_check.append((host, port, vulnerables))
-
-            #print(service)
-
-            """
-            if check_port(host, port):
-                service = "%s:%s" % (host, port)
-                print(service)
-                to_check.append((host, port))
-                #ret = main(host)
-                #if not ret:
-                #    vulnerables[(host,port)]=ret
-                #    errors += 1
-                """
 
     rs = pool.map_async(f, to_check)
     while not rs.ready():
@@ -263,10 +269,10 @@ if __name__ == '__main__':
     if vulnerables:
         listing = ""
         for host, port in sorted(vulnerables.keys()):
-            listing += "\t%s:%s => %s\n" % (host, port, ", ".join(sorted(hosts[host])))
+            listing += "\t%s:%s (%s) => %s\n" % (host, port, vulnerables[(host,port)], ", ".join(sorted(hosts[host])))
 
-        logging.error("Found %s/%s (%.0f%%) vulnerable hosts:\n%s" % \
-                      (errors, len(hosts), errors*100/len(hosts), listing))
+        logging.error("Found %s/%s (%.0f%%) vulnerable services:\n%s" % \
+                      (len(vulnerables), len(to_check), len(vulnerables)*100/len(to_check), listing))
 
 
     end = time.time()
