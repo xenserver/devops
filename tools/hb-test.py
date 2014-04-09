@@ -242,6 +242,8 @@ if __name__ == '__main__':
             except Exception, e:
                 logging.error("Failed to resolve: %s" % host)
 
+    print("List of hosts[%s]: %s" % (len(hosts), sorted(hosts)))
+
     #ports = [ 443, 25, 587, 143, 993, 465, 21, 22, 110]
     ports = [ 443, 25, 22, 587, 143, 110]
     #ports = [ 443 ]
