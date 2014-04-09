@@ -222,11 +222,14 @@ if __name__ == '__main__':
     for host in _hosts:
         host = host.strip()
         if host and host[0] != "#":
-            ip = socket.gethostbyname(host)
-            if ip not in hosts:
-                hosts[ip]=[host]
-            elif host not in hosts[ip]:
-                hosts[ip].append(host)
+            try:
+                ip = socket.gethostbyname(host)
+                if ip not in hosts:
+                    hosts[ip]=[host]
+                elif host not in hosts[ip]:
+                    hosts[ip].append(host)
+            except Exception, e:
+                logging.error("Failed to resolve: %s" % host)
 
     ports = [ 443, 25, 587, 143, 993, 465, 21, 22]
 
