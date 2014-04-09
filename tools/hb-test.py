@@ -212,11 +212,14 @@ vulnerables = manager.dict()
 
 
 def f(x):
-    host, port, zz = x
-    if check_port(host, port):
-        ret = main(host)
-        #if ret is True :  # 2 means skipped due to internal error
-        vulnerables[(host,port)]=ret
+    try:
+        host, port, zz = x
+        if check_port(host, port):
+            ret = main(host)
+            #if ret is True :  # 2 means skipped due to internal error
+            vulnerables[(host,port)]=ret
+    except Exception, e:
+        vulnerables[(host,port)]=e
 
 if __name__ == '__main__':
 
