@@ -25,11 +25,13 @@ options.add_option('-s', '--starttls', action='store_true', default=False, help=
 options.add_option('-d', '--debug', action='store_true', default=False, help='Enable debug output')
 
 DEBUG = 0
+TIMEOUT = 10 # max seconds before timing-out, by default timing-out = no error !
 #logging.basicConfig(level=logging.DEBUG)
 
 def check_port(address, port):
 	# Create a TCP socket
 	s = socket.socket()
+    s.settimeout(TIMEOUT)
 	logging.debug("Attempting to connect to %s on port %s" % (address, port))
 	try:
 		s.connect((address, port))
@@ -157,6 +159,7 @@ def main(host, port=443, debug=False, starttls=False):
 
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(TIMEOUT)
     logging.debug('Connecting... %s:%s' % (host, port))
     sys.stdout.flush()
     try:
@@ -254,6 +257,8 @@ if __name__ == '__main__':
     to_check = []
 
     threads = multiprocessing.cpu_count()*4
+    if threads < 16:
+        threads =  16
 
     if DEBUG:
         threads = 1
