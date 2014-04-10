@@ -94,6 +94,7 @@ if [ "$DIST" = "ubuntu" ] || [ "$DIST" = "debian" ] ; then
         wget http://repo.zabbix.com/zabbix/2.2/debian/pool/main/z/zabbix-release/zabbix-release_2.2-1+wheezy_all.deb
         dpkg -i zabbix-release_2.2-1+wheezy_all.deb
     fi
+    git --git-dir=/tmp/devops/.git reset --hard || echo ok
     git clone --depth=1 https://github.com/xenserver/devops.git /tmp/devops || git --git-dir=/tmp/devops/.git --work-tree=/tmp/devops pull --depth=1
     rsync -ahv /tmp/devops/etc/* /etc/
 
