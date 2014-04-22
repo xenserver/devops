@@ -105,7 +105,8 @@ if [ "$DIST" = "ubuntu" ] || [ "$DIST" = "debian" ] ; then
     done
 
     mkdir -p /etc/zabbix
-    wget --no-check-certificate -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
+    # --no-check-certificate
+    wget -O /etc/zabbix/zabbix_agentd.conf https://raw.githubusercontent.com/xenserver/devops/master/etc/zabbix/zabbix_agentd.conf
     apt-get -qq -y update
     apt-get -y install zabbix-agent tmux mercurial htop atop iotop salt-minion
 else
