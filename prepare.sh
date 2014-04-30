@@ -113,3 +113,27 @@ else
     echo "WARN: Unable to install zabbix for this OS"
 fi
 
+
+# --- configuring exim4 if is not configured so the host can send emails
+if [[ ! -f /etc/exim4/update-exim4.conf.conf ]]; then
+
+cat >/etc/exim4/update-exim4.conf.conf <<ZZZ
+dc_eximconfig_configtype='smarthost'
+dc_local_interfaces='127.0.0.1 ; ::1'
+dc_readhost=''
+dc_relay_domains='*'
+dc_minimaldns='false'
+dc_relay_nets='localhost'
+dc_smarthost='smtp.uk.xensource.com'
+CFILEMODE='644'
+dc_use_split_config='true'
+dc_hide_mailname='false'
+dc_mailname_in_oh='true'
+dc_localdelivery='mail_spool'
+message_body_visible=20000
+tls_on_connect_ports=465
+ZZZ
+apt-get -y install exim4
+update-exim4.conf
+fi
+
